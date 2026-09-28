@@ -920,3 +920,16 @@ button {
     grid-template-columns: 1fr 1fr;
   }
 }
+.ai-analysis {
+  margin-top: 14px;
+}
+
+.ai-analysis pre {
+  white-space: pre-wrap;
+  word-wrap: break-word;
+  font-family: inherit;
+  font-size: 14px;
+  line-height: 1.7;
+  margin: 0;
+  color: inherit;
+}
