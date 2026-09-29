@@ -17,16 +17,24 @@ load_dotenv("../.env")
 # ---------------------------------------------------------
 
 HINDSIGHT_API_KEY = os.getenv("HINDSIGHT_API_KEY")
+
 HINDSIGHT_BASE_URL = os.getenv(
     "HINDSIGHT_BASE_URL",
     "https://api.hindsight.vectorize.io"
 )
+
 HINDSIGHT_BANK_ID = os.getenv(
     "HINDSIGHT_BANK_ID",
     "incidentmind"
 )
 
 GROQ_API_KEY = os.getenv("GROQ_API_KEY")
+
+# Frontend URL for CORS
+FRONTEND_URL = os.getenv(
+    "FRONTEND_URL",
+    "http://localhost:5173"
+)
 
 groq_client = (
     Groq(api_key=GROQ_API_KEY)
@@ -45,9 +53,17 @@ app = FastAPI(
     version="1.0.0"
 )
 
+
+# ---------------------------------------------------------
+# CORS
+# ---------------------------------------------------------
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173"],
+    allow_origins=[
+        "http://localhost:5173",
+        FRONTEND_URL,
+    ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -415,15 +431,10 @@ Important:
         "success": True,
         "incident": incident,
         "memory_bank": HINDSIGHT_BANK_ID,
-
         "memories": memories,
-
         "reflection": reflection,
-
         "analysis": analysis,
-
         "agent_pipeline": [
-            "retain",
             "recall",
             "reflect",
             "groq_analysis"
@@ -517,7 +528,10 @@ def get_memory():
             "success": True,
             "memory_bank": HINDSIGHT_BANK_ID,
             "items": data.get("items", []),
-            "total": data.get("total", len(data.get("items", []))),
+            "total": data.get(
+                "total",
+                len(data.get("items", []))
+            ),
         }
 
     except requests.RequestException as error:
