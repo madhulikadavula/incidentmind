@@ -62,7 +62,7 @@ app.add_middleware(
     CORSMiddleware,
     allow_origins=[
         "http://localhost:5173",
-        FRONTEND_URL,
+        "https://incidentmind-theta.vercel.app",
     ],
     allow_credentials=True,
     allow_methods=["*"],
