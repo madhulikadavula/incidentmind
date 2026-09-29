@@ -1,6 +1,10 @@
 import { useState } from 'react'
 import './App.css'
 
+const API_BASE_URL =
+  import.meta.env.VITE_API_BASE_URL ||
+  'http://127.0.0.1:8000'
+
 const incidents = [
   {
     id: 'INC-1042',
@@ -33,22 +37,22 @@ function App() {
   const [showForm, setShowForm] = useState(false)
   const [incidentText, setIncidentText] = useState('')
 
-  // Investigation state
+  // Investigation
   const [investigationData, setInvestigationData] = useState(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
 
-  // Hindsight memory state
+  // Hindsight Memory
   const [memoryData, setMemoryData] = useState([])
   const [memoryLoading, setMemoryLoading] = useState(false)
   const [memoryError, setMemoryError] = useState('')
 
-  // Incident resolution / Retain state
+  // Hindsight Retain
   const [resolutionText, setResolutionText] = useState('')
   const [resolving, setResolving] = useState(false)
   const [resolutionMessage, setResolutionMessage] = useState('')
 
-  // Hindsight Reflect state
+  // Hindsight Reflect
   const [reflection, setReflection] = useState('')
   const [reflectionLoading, setReflectionLoading] = useState(false)
   const [reflectionError, setReflectionError] = useState('')
@@ -63,7 +67,7 @@ function App() {
 
     try {
       const response = await fetch(
-        'http://127.0.0.1:8000/api/memory'
+        `${API_BASE_URL}/api/memory`
       )
 
       const data = await response.json()
@@ -76,11 +80,7 @@ function App() {
         )
       }
 
-      // Backend returns:
-      // { success: true, items: [...], total: number }
-      const memories = data.items || []
-
-      setMemoryData(memories)
+      setMemoryData(data.items || [])
     } catch (err) {
       console.error(err)
 
@@ -94,7 +94,7 @@ function App() {
 
   // =====================================================
   // SUBMIT INCIDENT
-  // Recall + Groq Investigation
+  // Hindsight Recall + Groq Investigation
   // =====================================================
 
   const submitIncident = async (e) => {
@@ -102,21 +102,27 @@ function App() {
 
     const incident = incidentText.trim()
 
-    if (!incident) return
+    if (!incident) {
+      return
+    }
 
     setLoading(true)
     setError('')
+    setInvestigationData(null)
+    setResolutionMessage('')
+    setReflection('')
+    setReflectionError('')
 
     try {
       const response = await fetch(
-        'http://127.0.0.1:8000/api/incidents/investigate',
+        `${API_BASE_URL}/api/incidents/investigate`,
         {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({
-            incident: incident,
+            incident,
           }),
         }
       )
@@ -132,13 +138,15 @@ function App() {
       }
 
       setInvestigationData(data)
+      setIncidentText('')
       setShowForm(false)
       setActivePage('Investigation')
     } catch (err) {
       console.error(err)
 
       setError(
-        err.message || 'Could not connect to backend.'
+        err.message ||
+          'Could not connect to IncidentMind backend.'
       )
     } finally {
       setLoading(false)
@@ -163,7 +171,7 @@ function App() {
 
     try {
       const response = await fetch(
-        'http://127.0.0.1:8000/api/incidents/resolve',
+        `${API_BASE_URL}/api/incidents/resolve`,
         {
           method: 'POST',
           headers: {
@@ -187,19 +195,20 @@ function App() {
       }
 
       setResolutionMessage(
-        'Resolution retained in Hindsight successfully.'
+        '✓ Resolution retained in Hindsight successfully.'
       )
 
       setResolutionText('')
 
-      // Reload live memories so the newly retained
-      // resolution appears in the Memory page.
+      // Refresh live memory after Retain
       await loadMemories()
     } catch (err) {
       console.error(err)
 
       setResolutionMessage(
-        err.message || 'Could not retain resolution.'
+        `Error: ${
+          err.message || 'Could not retain resolution.'
+        }`
       )
     } finally {
       setResolving(false)
@@ -207,8 +216,7 @@ function App() {
   }
 
   // =====================================================
-  // REFLECT
-  // Hindsight Reflect
+  // HINDSIGHT REFLECT
   // =====================================================
 
   const runReflection = async () => {
@@ -222,7 +230,7 @@ function App() {
 
     try {
       const response = await fetch(
-        'http://127.0.0.1:8000/api/incidents/reflect',
+        `${API_BASE_URL}/api/incidents/reflect`,
         {
           method: 'POST',
           headers: {
@@ -249,19 +257,38 @@ function App() {
       console.error(err)
 
       setReflectionError(
-        err.message || 'Could not generate reflection.'
+        err.message ||
+          'Could not generate Hindsight reflection.'
       )
     } finally {
       setReflectionLoading(false)
     }
   }
 
+  // =====================================================
+  // OPEN REPORT INCIDENT
+  // =====================================================
+
+  const openIncidentForm = () => {
+    setError('')
+    setShowForm(true)
+  }
+
+  // =====================================================
+  // NAVIGATION
+  // =====================================================
+
+  const openMemoryPage = () => {
+    setActivePage('Memory')
+    loadMemories()
+  }
+
   return (
     <div className="app-shell">
 
-      {/* ===================================================== */}
-      {/* SIDEBAR */}
-      {/* ===================================================== */}
+      {/* =====================================================
+          SIDEBAR
+      ===================================================== */}
 
       <aside className="sidebar">
 
@@ -280,23 +307,17 @@ function App() {
 
         <nav className="nav">
 
-          {/* Dashboard */}
-
           <button
             className={
               activePage === 'Dashboard'
                 ? 'nav-item active'
                 : 'nav-item'
             }
-            onClick={() =>
-              setActivePage('Dashboard')
-            }
+            onClick={() => setActivePage('Dashboard')}
           >
             <span>⌂</span>
             Dashboard
           </button>
-
-          {/* Investigation */}
 
           <button
             className={
@@ -304,15 +325,11 @@ function App() {
                 ? 'nav-item active'
                 : 'nav-item'
             }
-            onClick={() =>
-              setActivePage('Investigation')
-            }
+            onClick={() => setActivePage('Investigation')}
           >
             <span>◈</span>
             Investigation
           </button>
-
-          {/* Hindsight Memory */}
 
           <button
             className={
@@ -320,16 +337,11 @@ function App() {
                 ? 'nav-item active'
                 : 'nav-item'
             }
-            onClick={() => {
-              setActivePage('Memory')
-              loadMemories()
-            }}
+            onClick={openMemoryPage}
           >
             <span>◉</span>
             Hindsight Memory
           </button>
-
-          {/* Incident History */}
 
           <button
             className={
@@ -337,9 +349,7 @@ function App() {
                 ? 'nav-item active'
                 : 'nav-item'
             }
-            onClick={() =>
-              setActivePage('History')
-            }
+            onClick={() => setActivePage('History')}
           >
             <span>↻</span>
             Incident History
@@ -369,15 +379,13 @@ function App() {
 
       </aside>
 
-      {/* ===================================================== */}
-      {/* MAIN */}
-      {/* ===================================================== */}
+      {/* =====================================================
+          MAIN CONTENT
+      ===================================================== */}
 
       <main className="main-content">
 
-        {/* ===================================================== */}
         {/* TOP BAR */}
-        {/* ===================================================== */}
 
         <header className="topbar">
 
@@ -395,19 +403,16 @@ function App() {
 
           <button
             className="primary-button"
-            onClick={() => {
-              setError('')
-              setShowForm(true)
-            }}
+            onClick={openIncidentForm}
           >
             + Report Incident
           </button>
 
         </header>
 
-        {/* ===================================================== */}
-        {/* DASHBOARD */}
-        {/* ===================================================== */}
+        {/* =====================================================
+            DASHBOARD
+        ===================================================== */}
 
         {activePage === 'Dashboard' && (
           <>
@@ -438,10 +443,7 @@ function App() {
 
                 <button
                   className="hero-button"
-                  onClick={() => {
-                    setError('')
-                    setShowForm(true)
-                  }}
+                  onClick={openIncidentForm}
                 >
                   Investigate an Incident →
                 </button>
@@ -460,8 +462,6 @@ function App() {
               </div>
 
             </section>
-
-            {/* Stats */}
 
             <section className="stats-grid">
 
@@ -504,7 +504,7 @@ function App() {
                 </span>
 
                 <strong>
-                  128
+                  {memoryData.length || 128}
                 </strong>
 
                 <small>
@@ -530,8 +530,6 @@ function App() {
               </div>
 
             </section>
-
-            {/* Dashboard grid */}
 
             <section className="dashboard-grid">
 
@@ -615,8 +613,6 @@ function App() {
 
               </div>
 
-              {/* Learning card */}
-
               <div className="panel learning-panel">
 
                 <div className="panel-header">
@@ -666,7 +662,7 @@ function App() {
                   </strong>
 
                   <span>
-                    Agent now recalls proven solutions
+                    Agent recalls proven solutions
                     from previous incidents.
                   </span>
 
@@ -679,9 +675,9 @@ function App() {
           </>
         )}
 
-        {/* ===================================================== */}
-        {/* INVESTIGATION */}
-        {/* ===================================================== */}
+        {/* =====================================================
+            INVESTIGATION
+        ===================================================== */}
 
         {activePage === 'Investigation' && (
 
@@ -698,8 +694,9 @@ function App() {
               </h3>
 
               <p>
-                The agent combines the current incident
-                with relevant Hindsight memories.
+                IncidentMind combines the current incident
+                with relevant Hindsight memories and
+                generates an AI investigation using Groq.
               </p>
 
             </div>
@@ -713,9 +710,8 @@ function App() {
                 </h3>
 
                 <p>
-                  IncidentMind is searching Hindsight
-                  for relevant memories and generating
-                  an AI investigation.
+                  Searching Hindsight memory and generating
+                  the AI investigation.
                 </p>
 
               </div>
@@ -742,9 +738,7 @@ function App() {
 
               <div className="investigation-grid">
 
-                {/* ================================================= */}
                 {/* CURRENT INCIDENT */}
-                {/* ================================================= */}
 
                 <div className="panel">
 
@@ -757,7 +751,7 @@ function App() {
                       </h3>
 
                       <p>
-                        Live incident from frontend
+                        Incident reported to IncidentMind
                       </p>
 
                     </div>
@@ -781,22 +775,25 @@ function App() {
                     <div className="log-box">
 
                       <span>
-                        INCIDENT
+                        INCIDENT PIPELINE
                       </span>
 
                       <br />
 
-                      Investigation sent to
-                      IncidentMind backend
+                      ✓ Incident received
 
                       <br />
 
-                      Hindsight memory bank:{' '}
+                      ✓ Hindsight Recall completed
+
+                      <br />
+
+                      ✓ Groq AI analysis generated
+
+                      <br />
+
+                      Memory bank:{' '}
                       {investigationData.memory_bank}
-
-                      <br />
-
-                      Groq AI analysis generated successfully
 
                     </div>
 
@@ -804,9 +801,7 @@ function App() {
 
                 </div>
 
-                {/* ================================================= */}
                 {/* HINDSIGHT RECALL */}
-                {/* ================================================= */}
 
                 <div className="panel">
 
@@ -819,7 +814,7 @@ function App() {
                       </h3>
 
                       <p>
-                        Relevant memories found
+                        Relevant historical memories
                       </p>
 
                     </div>
@@ -886,8 +881,9 @@ function App() {
                         </strong>
 
                         <p>
-                          Hindsight did not find a matching
-                          incident in the current memory bank.
+                          This is a new incident pattern.
+                          The resolution can be retained
+                          for future investigations.
                         </p>
 
                       </div>
@@ -898,9 +894,7 @@ function App() {
 
                 </div>
 
-                {/* ================================================= */}
-                {/* AI INVESTIGATION RESULT */}
-                {/* ================================================= */}
+                {/* GROQ AI RESULT */}
 
                 <div className="panel recommendation-panel">
 
@@ -913,8 +907,7 @@ function App() {
                       </h3>
 
                       <p>
-                        Analysis generated by Groq using
-                        Hindsight memory
+                        Groq reasoning using Hindsight context
                       </p>
 
                     </div>
@@ -944,8 +937,7 @@ function App() {
                         ) : (
 
                           <p>
-                            No AI analysis was returned
-                            for this incident.
+                            No AI analysis was returned.
                           </p>
 
                         )}
@@ -958,19 +950,14 @@ function App() {
 
                   <button
                     className="resolve-button"
-                    onClick={() => {
-                      setActivePage('Memory')
-                      loadMemories()
-                    }}
+                    onClick={openMemoryPage}
                   >
                     View Hindsight Memory →
                   </button>
 
                 </div>
 
-                {/* ================================================= */}
-                {/* RESOLVE / RETAIN */}
-                {/* ================================================= */}
+                {/* RETAIN / RESOLVE */}
 
                 <div className="panel">
 
@@ -983,8 +970,8 @@ function App() {
                       </h3>
 
                       <p>
-                        Save the successful resolution
-                        to Hindsight memory.
+                        Store the successful resolution
+                        in Hindsight for future recall.
                       </p>
 
                     </div>
@@ -1023,9 +1010,7 @@ function App() {
 
                 </div>
 
-                {/* ================================================= */}
-                {/* REFLECT */}
-                {/* ================================================= */}
+                {/* REFLECTION */}
 
                 <div className="panel">
 
@@ -1038,8 +1023,8 @@ function App() {
                       </h3>
 
                       <p>
-                        Identify patterns and lessons
-                        from previous incidents.
+                        Ask Hindsight to identify patterns,
+                        previous solutions and lessons.
                       </p>
 
                     </div>
@@ -1086,9 +1071,9 @@ function App() {
 
         )}
 
-        {/* ===================================================== */}
-        {/* MEMORY */}
-        {/* ===================================================== */}
+        {/* =====================================================
+            HINDSIGHT MEMORY
+        ===================================================== */}
 
         {activePage === 'Memory' && (
 
@@ -1105,13 +1090,11 @@ function App() {
               </h3>
 
               <p>
-                Persistent memories allow the agent to
-                improve its investigation over time.
+                Live memories retrieved from the
+                Hindsight incidentmind memory bank.
               </p>
 
             </div>
-
-            {/* Memory overview */}
 
             <div className="memory-overview">
 
@@ -1135,22 +1118,21 @@ function App() {
 
                 <strong>
 
-                  {memoryData.filter(
-                    (memory) => {
+                  {memoryData.filter((memory) => {
 
-                      const text =
-                        typeof memory === 'string'
-                          ? memory
-                          : memory.text ||
-                            memory.content ||
-                            memory.memory ||
-                            ''
+                    const text =
+                      typeof memory === 'string'
+                        ? memory
+                        : memory.text ||
+                          memory.content ||
+                          memory.memory ||
+                          ''
 
-                      return text
-                        .toLowerCase()
-                        .includes('incident')
-                    }
-                  ).length}
+                    return text
+                      .toLowerCase()
+                      .includes('incident')
+
+                  }).length}
 
                 </strong>
 
@@ -1164,30 +1146,27 @@ function App() {
 
                 <strong>
 
-                  {memoryData.filter(
-                    (memory) => {
+                  {memoryData.filter((memory) => {
 
-                      const text =
-                        typeof memory === 'string'
-                          ? memory
-                          : memory.text ||
-                            memory.content ||
-                            memory.memory ||
-                            ''
+                    const text =
+                      typeof memory === 'string'
+                        ? memory
+                        : memory.text ||
+                          memory.content ||
+                          memory.memory ||
+                          ''
 
-                      return text
-                        .toLowerCase()
-                        .includes('resolv')
-                    }
-                  ).length}
+                    return text
+                      .toLowerCase()
+                      .includes('resolv')
+
+                  }).length}
 
                 </strong>
 
               </div>
 
             </div>
-
-            {/* Memory list */}
 
             <div className="panel">
 
@@ -1217,8 +1196,6 @@ function App() {
 
               </div>
 
-              {/* Loading */}
-
               {memoryLoading && (
 
                 <div className="memory-result">
@@ -1234,8 +1211,8 @@ function App() {
                     </strong>
 
                     <p>
-                      Fetching the latest memories
-                      from the incidentmind memory bank.
+                      Fetching memories from the
+                      incidentmind memory bank.
                     </p>
 
                   </div>
@@ -1243,8 +1220,6 @@ function App() {
                 </div>
 
               )}
-
-              {/* Error */}
 
               {memoryError && (
 
@@ -1269,8 +1244,6 @@ function App() {
                 </div>
 
               )}
-
-              {/* Empty */}
 
               {!memoryLoading &&
                 !memoryError &&
@@ -1298,8 +1271,6 @@ function App() {
                   </div>
 
                 )}
-
-              {/* Memories */}
 
               {!memoryLoading &&
                 !memoryError &&
@@ -1371,9 +1342,9 @@ function App() {
 
         )}
 
-        {/* ===================================================== */}
-        {/* HISTORY */}
-        {/* ===================================================== */}
+        {/* =====================================================
+            INCIDENT HISTORY
+        ===================================================== */}
 
         {activePage === 'History' && (
 
@@ -1458,9 +1429,9 @@ function App() {
 
       </main>
 
-      {/* ===================================================== */}
-      {/* REPORT INCIDENT MODAL */}
-      {/* ===================================================== */}
+      {/* =====================================================
+          REPORT INCIDENT MODAL
+      ===================================================== */}
 
       {showForm && (
 
@@ -1484,9 +1455,7 @@ function App() {
 
               <button
                 className="close-button"
-                onClick={() =>
-                  setShowForm(false)
-                }
+                onClick={() => setShowForm(false)}
               >
                 ×
               </button>
@@ -1506,12 +1475,14 @@ function App() {
                 }
                 placeholder="Example: Payment API latency increased to 4.8 seconds and database connection timeouts are appearing in the logs..."
                 rows="7"
+                required
               />
 
               <div className="form-hint">
 
-                IncidentMind will investigate the incident
-                and recall relevant Hindsight memories.
+                IncidentMind will first recall relevant
+                Hindsight memories, then use Groq to
+                generate the investigation.
 
               </div>
 
@@ -1528,9 +1499,7 @@ function App() {
                 <button
                   type="button"
                   className="secondary-button"
-                  onClick={() =>
-                    setShowForm(false)
-                  }
+                  onClick={() => setShowForm(false)}
                   disabled={loading}
                 >
                   Cancel
@@ -1539,7 +1508,10 @@ function App() {
                 <button
                   type="submit"
                   className="primary-button"
-                  disabled={loading}
+                  disabled={
+                    loading ||
+                    !incidentText.trim()
+                  }
                 >
                   {loading
                     ? 'Investigating...'
