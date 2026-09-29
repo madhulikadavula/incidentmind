@@ -1,6 +1,10 @@
 import { useState } from 'react'
 import './App.css'
 
+const API_BASE_URL =
+  import.meta.env.VITE_API_BASE_URL ||
+  'http://127.0.0.1:8000'
+
 const incidents = [
   {
     id: 'INC-1042',
@@ -63,7 +67,7 @@ function App() {
 
     try {
       const response = await fetch(
-        'http://127.0.0.1:8000/api/memory'
+        `${API_BASE_URL}/api/memory`
       )
 
       const data = await response.json()
@@ -76,8 +80,6 @@ function App() {
         )
       }
 
-      // Backend returns:
-      // { success: true, items: [...], total: number }
       const memories = data.items || []
 
       setMemoryData(memories)
@@ -109,7 +111,7 @@ function App() {
 
     try {
       const response = await fetch(
-        'http://127.0.0.1:8000/api/incidents/investigate',
+        `${API_BASE_URL}/api/incidents/investigate`,
         {
           method: 'POST',
           headers: {
@@ -163,7 +165,7 @@ function App() {
 
     try {
       const response = await fetch(
-        'http://127.0.0.1:8000/api/incidents/resolve',
+        `${API_BASE_URL}/api/incidents/resolve`,
         {
           method: 'POST',
           headers: {
@@ -192,8 +194,6 @@ function App() {
 
       setResolutionText('')
 
-      // Reload live memories so the newly retained
-      // resolution appears in the Memory page.
       await loadMemories()
     } catch (err) {
       console.error(err)
@@ -222,7 +222,7 @@ function App() {
 
     try {
       const response = await fetch(
-        'http://127.0.0.1:8000/api/incidents/reflect',
+        `${API_BASE_URL}/api/incidents/reflect`,
         {
           method: 'POST',
           headers: {
@@ -280,8 +280,6 @@ function App() {
 
         <nav className="nav">
 
-          {/* Dashboard */}
-
           <button
             className={
               activePage === 'Dashboard'
@@ -295,8 +293,6 @@ function App() {
             <span>⌂</span>
             Dashboard
           </button>
-
-          {/* Investigation */}
 
           <button
             className={
@@ -312,8 +308,6 @@ function App() {
             Investigation
           </button>
 
-          {/* Hindsight Memory */}
-
           <button
             className={
               activePage === 'Memory'
@@ -328,8 +322,6 @@ function App() {
             <span>◉</span>
             Hindsight Memory
           </button>
-
-          {/* Incident History */}
 
           <button
             className={
@@ -374,10 +366,6 @@ function App() {
       {/* ===================================================== */}
 
       <main className="main-content">
-
-        {/* ===================================================== */}
-        {/* TOP BAR */}
-        {/* ===================================================== */}
 
         <header className="topbar">
 
@@ -461,8 +449,6 @@ function App() {
 
             </section>
 
-            {/* Stats */}
-
             <section className="stats-grid">
 
               <div className="stat-card">
@@ -530,8 +516,6 @@ function App() {
               </div>
 
             </section>
-
-            {/* Dashboard grid */}
 
             <section className="dashboard-grid">
 
@@ -614,8 +598,6 @@ function App() {
                 </div>
 
               </div>
-
-              {/* Learning card */}
 
               <div className="panel learning-panel">
 
@@ -742,9 +724,7 @@ function App() {
 
               <div className="investigation-grid">
 
-                {/* ================================================= */}
                 {/* CURRENT INCIDENT */}
-                {/* ================================================= */}
 
                 <div className="panel">
 
@@ -804,9 +784,7 @@ function App() {
 
                 </div>
 
-                {/* ================================================= */}
                 {/* HINDSIGHT RECALL */}
-                {/* ================================================= */}
 
                 <div className="panel">
 
@@ -898,9 +876,7 @@ function App() {
 
                 </div>
 
-                {/* ================================================= */}
                 {/* AI INVESTIGATION RESULT */}
-                {/* ================================================= */}
 
                 <div className="panel recommendation-panel">
 
@@ -968,9 +944,7 @@ function App() {
 
                 </div>
 
-                {/* ================================================= */}
                 {/* RESOLVE / RETAIN */}
-                {/* ================================================= */}
 
                 <div className="panel">
 
@@ -1023,9 +997,7 @@ function App() {
 
                 </div>
 
-                {/* ================================================= */}
                 {/* REFLECT */}
-                {/* ================================================= */}
 
                 <div className="panel">
 
@@ -1111,8 +1083,6 @@ function App() {
 
             </div>
 
-            {/* Memory overview */}
-
             <div className="memory-overview">
 
               <div className="panel memory-stat">
@@ -1187,8 +1157,6 @@ function App() {
 
             </div>
 
-            {/* Memory list */}
-
             <div className="panel">
 
               <div className="panel-header">
@@ -1217,8 +1185,6 @@ function App() {
 
               </div>
 
-              {/* Loading */}
-
               {memoryLoading && (
 
                 <div className="memory-result">
@@ -1244,8 +1210,6 @@ function App() {
 
               )}
 
-              {/* Error */}
-
               {memoryError && (
 
                 <div className="memory-result">
@@ -1269,8 +1233,6 @@ function App() {
                 </div>
 
               )}
-
-              {/* Empty */}
 
               {!memoryLoading &&
                 !memoryError &&
@@ -1298,8 +1260,6 @@ function App() {
                   </div>
 
                 )}
-
-              {/* Memories */}
 
               {!memoryLoading &&
                 !memoryError &&
